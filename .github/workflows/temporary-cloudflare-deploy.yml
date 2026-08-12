@@ -1,0 +1,44 @@
+name: Temporary Cloudflare deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout GTRZ Flow branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/gtrz-flow-v1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy to temporary Cloudflare account
+        env:
+          CI: 'true'
+        run: |
+          set -o pipefail
+          npx wrangler@latest deploy --temporary 2>&1 | tee temporary-deploy.txt
+
+      - name: Upload deploy output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-cloudflare-deploy-output
+          path: temporary-deploy.txt
+          if-no-files-found: ignore
+          retention-days: 1
