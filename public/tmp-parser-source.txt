@@ -1,1 +1,54 @@
-export function testParser(value) { return value; }
+function sqliteTimestamp(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  const date = Number.isFinite(numeric)
+    ? new Date(numeric < 1e12 ? numeric * 1000 : numeric)
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+function commentFromChange(change) {
+  const field = change?.field;
+  if (field !== 'comments' && field !== 'live_comments') return null;
+  const value = change?.value || {};
+  const commentId = value.id || value.comment_id;
+  if (!commentId) return null;
+  const from = value.from || {};
+  const media = value.media || {};
+  return {
+    commentId: String(commentId),
+    contactId: from.id != null ? String(from.id) : value.user_id != null ? String(value.user_id) : null,
+    username: from.username || value.username || null,
+    mediaId: media.id != null ? String(media.id) : value.media_id != null ? String(value.media_id) : null,
+    text: typeof value.text === 'string' ? value.text : '',
+    createdAt: sqliteTimestamp(value.created_time ?? value.timestamp),
+    source: field === 'live_comments' ? 'live_comment' : 'comment',
+  };
+}
+
+export function normalizeInstagramCommentEvents(payload) {
+  const comments = [];
+  if (!payload || payload.object !== 'instagram' || !Array.isArray(payload.entry)) return comments;
+
+  for (const entry of payload.entry) {
+    if (Array.isArray(entry?.changes)) {
+      for (const change of entry.changes) {
+        const comment = commentFromChange(change);
+        if (comment) comments.push(comment);
+      }
+    }
+
+    if (entry?.field && entry?.value) {
+      const comment = commentFromChange({ field: entry.field, value: entry.value });
+      if (comment) comments.push(comment);
+    }
+  }
+
+  const seen = new Set();
+  return comments.filter((comment) => {
+    if (seen.has(comment.commentId)) return false;
+    seen.add(comment.commentId);
+    return true;
+  });
+}
