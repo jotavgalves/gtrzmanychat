@@ -31,6 +31,19 @@ async function readJsonSafely(response) {
   }
 }
 
+async function subscribeAccountWebhooks(env, accountId, fields = ['comments', 'messages']) {
+  const requested = [...new Set(fields.map(String).filter(Boolean))];
+  const response = await metaFetch(env, `/${encodeURIComponent(accountId)}/subscribed_apps`, {
+    method: 'POST',
+    body: JSON.stringify({ subscribed_fields: requested }),
+  });
+  const data = await readJsonSafely(response);
+  if (!response.ok || data?.success !== true) {
+    throw new Error(data?.error?.message || `Falha ao assinar webhooks: HTTP ${response.status}`);
+  }
+  return requested;
+}
+
 export async function syncInstagramAccount(env) {
   const response = await metaFetch(env, '/me?fields=id,username');
   const data = await readJsonSafely(response);
@@ -38,7 +51,9 @@ export async function syncInstagramAccount(env) {
     const message = data?.error?.message || `Meta retornou HTTP ${response.status}`;
     throw new Error(message);
   }
-  return saveInstagramAccount(env, data);
+  const account = await saveInstagramAccount(env, data);
+  await subscribeAccountWebhooks(env, data.id, ['comments', 'messages']);
+  return account;
 }
 
 export async function resolveInstagramAccount(env) {
@@ -62,15 +77,7 @@ export async function getWebhookSubscriptions(env) {
 
 export async function ensureWebhookSubscriptions(env, requestedFields = ['comments', 'messages']) {
   const account = await resolveInstagramAccount(env);
-  const fields = [...new Set(requestedFields.map(String).filter(Boolean))];
-  const response = await metaFetch(env, `/${encodeURIComponent(account.id)}/subscribed_apps`, {
-    method: 'POST',
-    body: JSON.stringify({ subscribed_fields: fields }),
-  });
-  const data = await readJsonSafely(response);
-  if (!response.ok || data?.success !== true) {
-    throw new Error(data?.error?.message || `Falha ao assinar webhooks: HTTP ${response.status}`);
-  }
+  const fields = await subscribeAccountWebhooks(env, account.id, requestedFields);
   const current = await getWebhookSubscriptions(env);
   return {
     success: true,
