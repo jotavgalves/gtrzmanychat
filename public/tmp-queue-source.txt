@@ -1,0 +1,83 @@
+import { assertSchema, requireDb } from './db.js';
+import { processComment, processInboundMessage } from './automation-runner.js';
+import { normalizeMessageEvents } from './meta.js';
+import { normalizeInstagramCommentEvents } from './instagram-events.js';
+
+function errorMessage(error) {
+  return String(error?.message || error || 'Erro inesperado');
+}
+
+async function processQueueMessage(message, env) {
+  const event = message.body || {};
+  const eventId = String(event.eventId || message.id || crypto.randomUUID());
+  const db = requireDb(env);
+
+  const existing = await db.prepare('SELECT status FROM webhook_events WHERE id=?').bind(eventId).first();
+  if (existing?.status === 'processed' || existing?.status === 'ignored') return { retry: false };
+
+  if (!existing) {
+    await db
+      .prepare(`INSERT INTO webhook_events (id,object_type,status) VALUES (?,?, 'queued')`)
+      .bind(eventId, event.payload?.object || null)
+      .run();
+  }
+
+  const comments = normalizeInstagramCommentEvents(event.payload);
+  const messages = normalizeMessageEvents(event.payload);
+
+  if (!comments.length && !messages.length) {
+    await db
+      .prepare(`UPDATE webhook_events SET status='ignored',processed_at=CURRENT_TIMESTAMP WHERE id=?`)
+      .bind(eventId)
+      .run();
+    return { retry: false };
+  }
+
+  let shouldRetry = false;
+  for (const comment of comments) {
+    const result = await processComment(env, comment);
+    if (result.retry) shouldRetry = true;
+  }
+
+  for (const inbound of messages) {
+    await processInboundMessage(env, inbound);
+  }
+
+  if (shouldRetry) {
+    await db
+      .prepare(`UPDATE webhook_events SET status='queued',error='Meta rate limit' WHERE id=?`)
+      .bind(eventId)
+      .run();
+    return { retry: true };
+  }
+
+  await db
+    .prepare(`UPDATE webhook_events SET status='processed',processed_at=CURRENT_TIMESTAMP,error=NULL WHERE id=?`)
+    .bind(eventId)
+    .run();
+  return { retry: false };
+}
+
+export async function handleQueue(batch, env) {
+  try {
+    await assertSchema(env);
+  } catch (error) {
+    console.error(JSON.stringify({ scope: 'queue_schema', error: errorMessage(error) }));
+    batch.retryAll({ delaySeconds: 60 });
+    return;
+  }
+
+  for (const message of batch.messages) {
+    try {
+      const result = await processQueueMessage(message, env);
+      if (result.retry) {
+        message.retry({ delaySeconds: Math.min(900, 30 * Math.max(1, message.attempts || 1)) });
+      } else {
+        message.ack();
+      }
+    } catch (error) {
+      console.error(JSON.stringify({ scope: 'queue_message', messageId: message.id, error: errorMessage(error) }));
+      message.retry({ delaySeconds: Math.min(900, 30 * Math.max(1, message.attempts || 1)) });
+    }
+  }
+}
