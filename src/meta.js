@@ -45,6 +45,41 @@ export async function resolveInstagramAccount(env) {
   return (await getInstagramAccount(env)) || syncInstagramAccount(env);
 }
 
+export async function getWebhookSubscriptions(env) {
+  const account = await resolveInstagramAccount(env);
+  const response = await metaFetch(env, `/${encodeURIComponent(account.id)}/subscribed_apps`);
+  const data = await readJsonSafely(response);
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `Falha ao consultar assinaturas de webhook: HTTP ${response.status}`);
+  }
+  const app = Array.isArray(data?.data) ? data.data[0] : null;
+  return {
+    appId: app?.id || null,
+    fields: Array.isArray(app?.subscribed_fields) ? app.subscribed_fields.map(String) : [],
+    raw: data,
+  };
+}
+
+export async function ensureWebhookSubscriptions(env, requestedFields = ['comments', 'messages']) {
+  const account = await resolveInstagramAccount(env);
+  const fields = [...new Set(requestedFields.map(String).filter(Boolean))];
+  const response = await metaFetch(env, `/${encodeURIComponent(account.id)}/subscribed_apps`, {
+    method: 'POST',
+    body: JSON.stringify({ subscribed_fields: fields }),
+  });
+  const data = await readJsonSafely(response);
+  if (!response.ok || data?.success !== true) {
+    throw new Error(data?.error?.message || `Falha ao assinar webhooks: HTTP ${response.status}`);
+  }
+  const current = await getWebhookSubscriptions(env);
+  return {
+    success: true,
+    requested: fields,
+    fields: current.fields,
+    appId: current.appId,
+  };
+}
+
 export async function getMetaStatus(env) {
   const configured = {
     accessToken: Boolean(env.INSTAGRAM_ACCESS_TOKEN),
@@ -54,7 +89,22 @@ export async function getMetaStatus(env) {
   if (!configured.accessToken) return { connected: false, configured, error: 'Token do Instagram ainda não configurado.' };
   try {
     const account = await syncInstagramAccount(env);
-    return { connected: true, configured, account, apiVersion: apiVersion(env) };
+    let subscriptions = null;
+    let subscriptionError = null;
+    try {
+      subscriptions = await getWebhookSubscriptions(env);
+    } catch (error) {
+      subscriptionError = String(error?.message || error);
+    }
+    return {
+      connected: true,
+      configured,
+      account,
+      apiVersion: apiVersion(env),
+      subscribedFields: subscriptions?.fields || [],
+      webhookAppId: subscriptions?.appId || null,
+      subscriptionError,
+    };
   } catch (error) {
     return { connected: false, configured, error: String(error?.message || error), apiVersion: apiVersion(env) };
   }
