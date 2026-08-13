@@ -1,0 +1,1 @@
+export function testParser(value) { return value; }
