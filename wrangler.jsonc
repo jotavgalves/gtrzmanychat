@@ -12,7 +12,9 @@
   },
   "d1_databases": [
     {
-      "binding": "DB"
+      "binding": "DB",
+      "database_name": "gtrzmanychat-db",
+      "database_id": "f4d92908-daa5-4cf7-8354-9b11f4a04376"
     }
   ],
   "queues": {
