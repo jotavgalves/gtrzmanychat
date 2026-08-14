@@ -129,6 +129,66 @@ export async function listInstagramMedia(env, limit = 50) {
   return data?.data || [];
 }
 
+export async function listInstagramComments(env, mediaId, limit = 25) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100));
+  const response = await metaFetch(
+    env,
+    `/${encodeURIComponent(mediaId)}/comments?fields=from,text&limit=${safeLimit}`,
+  );
+  const data = await readJsonSafely(response);
+  if (!response.ok) {
+    throw new Error(data?.error?.message || `Falha ao carregar comentários da mídia ${mediaId}: HTTP ${response.status}`);
+  }
+  return (data?.data || []).map((comment) => ({
+    id: comment?.id ? String(comment.id) : null,
+    text: typeof comment?.text === 'string' ? comment.text : '',
+    from: comment?.from ? {
+      id: comment.from.id != null ? String(comment.from.id) : null,
+      username: comment.from.username || null,
+    } : null,
+  }));
+}
+
+export async function testInstagramCommentPolling(env, mediaLimit = 5, commentLimit = 25) {
+  const media = await listInstagramMedia(env, mediaLimit);
+  const results = [];
+  for (const item of media) {
+    try {
+      const comments = await listInstagramComments(env, item.id, commentLimit);
+      results.push({
+        media: {
+          id: String(item.id),
+          media_type: item.media_type || null,
+          permalink: item.permalink || null,
+          timestamp: item.timestamp || null,
+          caption: typeof item.caption === 'string' ? item.caption.slice(0, 160) : '',
+        },
+        comments,
+        commentsCount: comments.length,
+      });
+    } catch (error) {
+      results.push({
+        media: {
+          id: String(item.id),
+          media_type: item.media_type || null,
+          permalink: item.permalink || null,
+          timestamp: item.timestamp || null,
+          caption: typeof item.caption === 'string' ? item.caption.slice(0, 160) : '',
+        },
+        comments: [],
+        commentsCount: 0,
+        error: String(error?.message || error),
+      });
+    }
+  }
+  return {
+    apiVersion: apiVersion(env),
+    mediaCount: media.length,
+    totalCommentsRead: results.reduce((sum, item) => sum + item.commentsCount, 0),
+    results,
+  };
+}
+
 export async function sendPrivateReply(env, commentId, text) {
   const account = await resolveInstagramAccount(env);
   const response = await metaFetch(env, `/${encodeURIComponent(account.id)}/messages`, {
