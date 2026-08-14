@@ -84,6 +84,44 @@ function normalizeCommentEvents(payload) {
   });
 }
 
+function objectKeys(value) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? Object.keys(value).sort()
+    : [];
+}
+
+function summarizeWebhookShape(payload) {
+  const entries = Array.isArray(payload?.entry) ? payload.entry.slice(0, 5) : [];
+  return {
+    scope: 'instagram_webhook_shape',
+    object: typeof payload?.object === 'string' ? payload.object : null,
+    topLevelKeys: objectKeys(payload),
+    entryCount: Array.isArray(payload?.entry) ? payload.entry.length : 0,
+    entries: entries.map((entry) => ({
+      entryKeys: objectKeys(entry),
+      directField: typeof entry?.field === 'string' ? entry.field : null,
+      directValueKeys: objectKeys(entry?.value),
+      changesCount: Array.isArray(entry?.changes) ? entry.changes.length : 0,
+      changes: Array.isArray(entry?.changes)
+        ? entry.changes.slice(0, 10).map((change) => ({
+            changeKeys: objectKeys(change),
+            field: typeof change?.field === 'string' ? change.field : null,
+            valueKeys: objectKeys(change?.value),
+          }))
+        : [],
+      messagingCount: Array.isArray(entry?.messaging) ? entry.messaging.length : 0,
+      messaging: Array.isArray(entry?.messaging)
+        ? entry.messaging.slice(0, 10).map((item) => ({
+            itemKeys: objectKeys(item),
+            messageKeys: objectKeys(item?.message),
+            hasSenderId: Boolean(item?.sender?.id),
+            hasRecipientId: Boolean(item?.recipient?.id),
+          }))
+        : [],
+    })),
+  };
+}
+
 async function processQueueMessage(message, env) {
   const event = message.body || {};
   const eventId = String(event.eventId || message.id || crypto.randomUUID());
@@ -117,6 +155,11 @@ async function processQueueMessage(message, env) {
   }));
 
   if (!comments.length && !messages.length) {
+    console.log(JSON.stringify({
+      eventId,
+      ...summarizeWebhookShape(event.payload),
+    }));
+
     await db
       .prepare(`UPDATE webhook_events SET status='ignored',processed_at=CURRENT_TIMESTAMP,error='No supported events found' WHERE id=?`)
       .bind(eventId)
