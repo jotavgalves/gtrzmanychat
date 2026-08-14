@@ -53,14 +53,14 @@ Permissões usadas pelo projeto:
 - `instagram_business_manage_comments`
 - `instagram_business_manage_messages`
 
-Campos de webhook que devem ser assinados:
+Campos de webhook usados pela V1:
 
 - `comments`
 - `messages`
 
-A Private Reply inicial é enviada usando o `comment_id`. A Meta limita esse recurso a uma única mensagem privada inicial por comentário; mensagens seguintes dependem de uma resposta do usuário e das regras da janela de mensagens.
+A Private Reply inicial é enviada usando o `comment_id`. A Meta limita esse recurso a uma única mensagem privada inicial vinculada ao comentário; a continuidade da conversa depende de uma resposta do usuário e das regras de mensageria aplicáveis.
 
-Documentação oficial/coleção oficial da Meta:
+Coleção oficial da Meta para Instagram API:
 
 - https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
 - https://www.postman.com/meta/instagram/request/23987686-189d7215-22b3-403f-b2f5-a46c7e66a514
@@ -129,28 +129,41 @@ npm install
 npm run dev
 ```
 
-O D1 e as Queues locais são provisionados pelo Wrangler. Para criar a estrutura manualmente no D1 local:
+Para criar a estrutura manualmente no D1 local:
 
 ```bash
 npm run db:migrate:local
+```
+
+Para validar a sintaxe dos módulos do projeto:
+
+```bash
+npm run check
 ```
 
 ## Estrutura
 
 ```text
 public/
-  index.html       painel
-  app.css          design system/UI
-  app.js           frontend do painel
+  index.html              painel
+  app.css                 entrada dos estilos
+  app-core.css            estrutura e design system
+  app-components.css      dashboard, tabelas, inbox e modais
+  app.js                  carregador do frontend
+  app-core.js             estado, API client e automações
+  app-features.js         CRM, inbox, configurações e eventos
 src/
-  index.js         router HTTP + consumer da Queue
-  auth.js          sessão administrativa
-  db.js            D1, bootstrap e helpers
-  meta.js          integração Instagram/Meta
-  automations.js   regras, dedupe e execução
+  index.js                entrypoint do Worker
+  api.js                  endpoints administrativos
+  webhook.js              verificação, recepção e Queue consumer
+  auth.js                 sessão administrativa
+  db.js                   D1, bootstrap e helpers
+  meta.js                 integração Instagram/Meta
+  automation-crud.js      criação e edição de regras
+  automation-runner.js    matching, dedupe e execução
 migrations/
-  0001_initial.sql schema versionado
-wrangler.jsonc     Worker, assets, D1 e Queues
+  0001_initial.sql        schema versionado
+wrangler.jsonc            Worker, assets, D1 e Queues
 ```
 
 ## Segurança

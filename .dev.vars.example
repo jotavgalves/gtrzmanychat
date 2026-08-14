@@ -1,0 +1,5 @@
+ADMIN_PASSWORD=troque-por-uma-senha-forte
+SESSION_SECRET=gere-uma-string-longa-e-aleatoria
+META_VERIFY_TOKEN=gere-outro-token-aleatorio
+META_APP_SECRET=segredo-do-app-meta
+INSTAGRAM_ACCESS_TOKEN=token-da-conta-profissional-instagram

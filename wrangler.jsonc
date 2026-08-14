@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gtrzmanychat",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/webhooks/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gtrzmanychat-db",
+      "database_id": "f4d92908-daa5-4cf7-8354-9b11f4a04376"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "EVENT_QUEUE",
+        "queue": "gtrzmanychat-events"
+      },
+      {
+        "binding": "DEAD_LETTER_QUEUE",
+        "queue": "gtrzmanychat-events-dlq"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "gtrzmanychat-events",
+        "max_batch_size": 10,
+        "max_batch_timeout": 2,
+        "max_retries": 5,
+        "retry_delay": 15,
+        "dead_letter_queue": "gtrzmanychat-events-dlq"
+      }
+    ]
+  },
+  "vars": {
+    "META_API_VERSION": "v25.0",
+    "APP_NAME": "GTRZ Flow"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

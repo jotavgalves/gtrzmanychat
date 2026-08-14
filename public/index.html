@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>GTRZ Flow · Instagram Automation</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <section class="login-screen" id="loginView">
+    <div class="login-orb orb-a"></div><div class="login-orb orb-b"></div>
+    <form class="login-card" id="loginForm">
+      <div class="brand-lockup">
+        <div class="brand-mark">G</div>
+        <div><strong>GTRZ FLOW</strong><span>Instagram Automation</span></div>
+      </div>
+      <div class="login-copy">
+        <div class="eyebrow">PAINEL PRIVADO</div>
+        <h1>Transforme comentários em conversas.</h1>
+        <p>Automação oficial do Instagram, CRM e inbox em um painel feito para a operação da GTRZ.</p>
+      </div>
+      <label class="field"><span>Senha administrativa</span><input id="password" type="password" autocomplete="current-password" placeholder="••••••••••••" required></label>
+      <button class="btn btn-primary btn-xl" type="submit">Entrar no Flow <span>→</span></button>
+      <div class="form-error" id="loginError"></div>
+      <div class="login-foot"><i></i> API oficial Meta + Cloudflare</div>
+    </form>
+  </section>
+
+  <div class="app-shell hidden" id="appView">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand-lockup compact">
+          <div class="brand-mark">G</div>
+          <div><strong>GTRZ FLOW</strong><span>Instagram Automation</span></div>
+        </div>
+        <button class="icon-btn mobile-only" id="closeSidebar" aria-label="Fechar menu">×</button>
+      </div>
+
+      <nav class="nav" id="nav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Visão geral</span></button>
+        <button class="nav-item" data-view="automations"><span class="nav-icon">⚡</span><span>Automações</span><b id="navAutomationCount">0</b></button>
+        <button class="nav-item" data-view="inbox"><span class="nav-icon">✉</span><span>Inbox</span></button>
+        <button class="nav-item" data-view="contacts"><span class="nav-icon">◎</span><span>Contatos</span></button>
+        <button class="nav-item" data-view="activity"><span class="nav-icon">◫</span><span>Atividade</span></button>
+        <div class="nav-separator"></div>
+        <button class="nav-item" data-view="settings"><span class="nav-icon">⚙</span><span>Configurações</span></button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="connection-mini"><span class="status-dot" id="sidebarStatusDot"></span><div><strong id="sidebarAccount">Instagram</strong><span id="sidebarStatus">Verificando conexão</span></div></div>
+        <button class="nav-item logout-item" id="logoutBtn"><span class="nav-icon">↗</span><span>Sair</span></button>
+      </div>
+    </aside>
+
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left"><button class="icon-btn mobile-only" id="openSidebar">☰</button><div><div class="eyebrow" id="pageEyebrow">GTRZ FLOW</div><h2 id="pageTitle">Visão geral</h2></div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="simulateBtn">Testar automação</button>
+          <button class="btn btn-primary" id="newAutomationTop">+ Nova automação</button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="view active" id="view-dashboard">
+          <div class="system-alert hidden" id="globalPauseAlert"><div><strong>Automações pausadas globalmente</strong><span>Nenhuma DM automática será enviada até você reativar o sistema.</span></div><button class="btn btn-light" data-global-resume>Reativar</button></div>
+
+          <div class="hero-row">
+            <div><div class="eyebrow">ÚLTIMAS 24 HORAS</div><h3>O que está acontecendo no seu Instagram.</h3></div>
+            <div class="hero-actions"><button class="btn btn-danger-outline" id="killSwitchBtn">Pausar tudo</button></div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card"><div class="metric-top"><span>Comentários</span><i class="metric-glyph">↳</i></div><strong id="metricComments">—</strong><small>recebidos em 24h</small></article>
+            <article class="metric-card"><div class="metric-top"><span>DMs enviadas</span><i class="metric-glyph">→</i></div><strong id="metricSent">—</strong><small>private replies entregues</small></article>
+            <article class="metric-card"><div class="metric-top"><span>Respostas</span><i class="metric-glyph">↩</i></div><strong id="metricReplies">—</strong><small>mensagens recebidas</small></article>
+            <article class="metric-card accent"><div class="metric-top"><span>Automações ativas</span><i class="metric-glyph">⚡</i></div><strong id="metricActive">—</strong><small id="metricContacts">— contatos no CRM</small></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel span-2">
+              <div class="panel-head"><div><div class="eyebrow">AUTOMAÇÕES</div><h3>Fluxos em operação</h3></div><button class="text-btn" data-go="automations">Ver todas →</button></div>
+              <div id="dashboardAutomations" class="automation-stack"><div class="loading-row">Carregando automações…</div></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><div class="eyebrow">ATIVIDADE</div><h3>Últimos disparos</h3></div><button class="text-btn" data-go="activity">Abrir log →</button></div>
+              <div id="dashboardActivity" class="activity-list"><div class="loading-row">Carregando atividade…</div></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-automations">
+          <div class="section-toolbar">
+            <div><div class="eyebrow">MOTOR DE AUTOMAÇÃO</div><h3>Comentários que viram Direct.</h3><p>Organize regras por prioridade. Apenas a primeira automação elegível é executada por comentário.</p></div>
+            <button class="btn btn-primary" id="newAutomationBtn">+ Criar automação</button>
+          </div>
+          <div class="panel flush"><div id="automationTableWrap" class="table-wrap"><div class="loading-row padded">Carregando…</div></div></div>
+        </section>
+
+        <section class="view" id="view-inbox">
+          <div class="section-toolbar"><div><div class="eyebrow">CONVERSAS</div><h3>Inbox do Instagram.</h3><p>Responda conversas que já estão dentro da janela permitida pela Meta.</p></div></div>
+          <div class="inbox-shell panel flush">
+            <aside class="conversation-list" id="conversationList"><div class="loading-row padded">Carregando conversas…</div></aside>
+            <section class="conversation-pane" id="conversationPane">
+              <div class="empty-conversation"><div class="empty-icon">✉</div><strong>Escolha uma conversa</strong><span>As mensagens recebidas pelo webhook aparecem aqui.</span></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-contacts">
+          <div class="section-toolbar"><div><div class="eyebrow">CRM</div><h3>Pessoas que interagiram.</h3><p>Contatos são criados automaticamente a partir de comentários e mensagens.</p></div><div class="search-box"><span>⌕</span><input id="contactSearch" placeholder="Buscar @usuário ou ID"></div></div>
+          <div class="panel flush"><div id="contactsTableWrap" class="table-wrap"><div class="loading-row padded">Carregando…</div></div></div>
+        </section>
+
+        <section class="view" id="view-activity">
+          <div class="section-toolbar"><div><div class="eyebrow">AUDITORIA OPERACIONAL</div><h3>Cada tentativa, registrada.</h3><p>Veja qual regra executou, para quem, quando e com qual resultado.</p></div><button class="btn btn-ghost" id="refreshActivity">Atualizar</button></div>
+          <div class="panel flush"><div id="activityTableWrap" class="table-wrap"><div class="loading-row padded">Carregando…</div></div></div>
+        </section>
+
+        <section class="view" id="view-settings">
+          <div class="section-toolbar"><div><div class="eyebrow">INTEGRAÇÃO</div><h3>Meta + Cloudflare.</h3><p>O painel nunca mostra os valores dos seus secrets. Ele só verifica se estão configurados.</p></div><button class="btn btn-ghost" id="syncMetaBtn">Sincronizar Instagram</button></div>
+          <div class="settings-grid">
+            <section class="panel connection-card">
+              <div class="panel-head"><div><div class="eyebrow">INSTAGRAM</div><h3>Conta conectada</h3></div><span class="pill neutral" id="metaStatusPill">Verificando</span></div>
+              <div class="account-card" id="metaAccountCard"><div class="avatar-placeholder">IG</div><div><strong>Instagram</strong><span>Aguardando sincronização</span></div></div>
+              <div class="secret-grid" id="secretGrid"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><div><div class="eyebrow">WEBHOOK</div><h3>Receber eventos</h3></div></div>
+              <label class="copy-field"><span>Callback URL</span><div><input id="webhookUrl" readonly value="Carregando…"><button data-copy="#webhookUrl">Copiar</button></div></label>
+              <div class="webhook-fields"><span>Assinar campos</span><div><code>comments</code><code>messages</code></div></div>
+              <div class="setup-note">No Meta for Developers, use o mesmo valor do secret <code>META_VERIFY_TOKEN</code> como Verify Token.</div>
+            </section>
+          </div>
+          <section class="panel setup-panel">
+            <div class="panel-head"><div><div class="eyebrow">CHECKLIST</div><h3>O que falta para entrar em produção</h3></div></div>
+            <div class="checklist" id="setupChecklist"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="automationModal">
+    <div class="modal modal-lg">
+      <div class="modal-head"><div><div class="eyebrow">AUTOMAÇÃO</div><h3 id="automationModalTitle">Nova automação</h3></div><button class="icon-btn" data-close-modal>×</button></div>
+      <form id="automationForm">
+        <input type="hidden" id="automationId">
+        <div class="form-grid two">
+          <label class="field"><span>Nome da automação</span><input id="automationName" maxlength="100" placeholder="Ex.: Reel lançamento Jampa" required></label>
+          <label class="field"><span>Status inicial</span><select id="automationStatus"><option value="paused">Pausada</option><option value="active">Ativa</option></select></label>
+        </div>
+
+        <div class="flow-builder">
+          <div class="flow-step"><div class="step-badge">1</div><div class="step-body"><div class="step-title"><strong>QUANDO</strong><span>Defina o comentário que ativa a regra.</span></div><div class="form-grid two">
+            <label class="field"><span>Tipo de comentário</span><select id="triggerType"><option value="any_comment">Qualquer comentário</option><option value="keyword">Contém palavra-chave</option></select></label>
+            <label class="field hidden" id="keywordField"><span>Palavra-chave</span><input id="keyword" placeholder="INGRESSO"></label>
+            <label class="field"><span>Onde</span><select id="mediaScope"><option value="all">Qualquer publicação</option><option value="specific">Uma publicação específica</option></select></label>
+            <label class="field hidden" id="mediaField"><span>Publicação</span><select id="mediaId"><option value="">Carregar publicações…</option></select></label>
+          </div></div></div>
+          <div class="flow-line"></div>
+          <div class="flow-step"><div class="step-badge red">2</div><div class="step-body"><div class="step-title"><strong>ENVIAR</strong><span>Essa é a única Private Reply inicial vinculada ao comentário.</span></div><label class="field"><span>Mensagem no Direct</span><textarea id="replyText" maxlength="1000" rows="5" placeholder="Vi seu comentário 👀 Quer receber o link do ingresso?" required></textarea><small><b id="replyCount">0</b>/1000 caracteres</small></label></div></div>
+          <div class="flow-line"></div>
+          <div class="flow-step"><div class="step-badge muted">3</div><div class="step-body"><div class="step-title"><strong>PROTEÇÕES</strong><span>Evite repetição e organize conflitos entre regras.</span></div><div class="form-grid three">
+            <label class="toggle-field"><input type="checkbox" id="oncePerContact" checked><span class="toggle"></span><div><strong>Uma vez por contato</strong><small>Não repetir esta automação para a mesma pessoa.</small></div></label>
+            <label class="field"><span>Cooldown</span><div class="suffix-input"><input id="cooldown" type="number" min="0" max="43200" value="0"><em>min</em></div></label>
+            <label class="field"><span>Prioridade</span><input id="priority" type="number" min="0" max="10000" value="100"><small>Maior número vence primeiro.</small></label>
+          </div></div></div>
+        </div>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-modal>Cancelar</button><button class="btn btn-primary" type="submit">Salvar automação</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="simulateModal">
+    <div class="modal">
+      <div class="modal-head"><div><div class="eyebrow">MODO TESTE</div><h3>Simular comentário</h3></div><button class="icon-btn" data-close-simulate>×</button></div>
+      <form id="simulateForm">
+        <label class="field"><span>Comentário simulado</span><input id="simulateText" placeholder="onde compro ingresso?" required></label>
+        <label class="field"><span>Publicação</span><select id="simulateMedia"><option value="">Qualquer / sem publicação específica</option></select></label>
+        <div class="simulation-result hidden" id="simulationResult"></div>
+        <div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-simulate>Fechar</button><button class="btn btn-primary" type="submit">Executar simulação</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast-zone" id="toastZone"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
