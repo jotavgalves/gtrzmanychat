@@ -234,13 +234,16 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/diagnostics/poll-test' && request.method === 'GET') {
-        const result = await testInstagramCommentPolling(env, 5, 25);
+        const result = await testInstagramCommentPolling(env, 25, 50);
         return json({
           ok: true,
           apiVersion: result.apiVersion,
           mediaCount: result.mediaCount,
           totalCommentsRead: result.totalCommentsRead,
           media: result.results.map((item) => ({
+            mediaType: item.media?.media_type || null,
+            permalink: item.media?.permalink || null,
+            timestamp: item.media?.timestamp || null,
             commentsCount: item.commentsCount,
             error: item.error || null,
           })),
