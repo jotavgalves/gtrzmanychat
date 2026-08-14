@@ -2,7 +2,7 @@ import { handleAdminApi } from '../src/api.js';
 import { handleWebhook, handleWebhookVerification } from '../src/webhook.js';
 import { assertSchema, requireDb } from '../src/db.js';
 import { processComment, processInboundMessage } from '../src/automation-runner.js';
-import { normalizeMessageEvents } from '../src/meta.js';
+import { normalizeMessageEvents, testInstagramCommentPolling } from '../src/meta.js';
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -233,6 +233,19 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
+      if (url.pathname === '/diagnostics/poll-test' && request.method === 'GET') {
+        const result = await testInstagramCommentPolling(env, 5, 25);
+        return json({
+          ok: true,
+          apiVersion: result.apiVersion,
+          mediaCount: result.mediaCount,
+          totalCommentsRead: result.totalCommentsRead,
+          media: result.results.map((item) => ({
+            commentsCount: item.commentsCount,
+            error: item.error || null,
+          })),
+        });
+      }
       if (url.pathname === '/webhooks/instagram' && request.method === 'GET') {
         return handleWebhookVerification(request, env);
       }
