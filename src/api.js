@@ -2,7 +2,7 @@ import { createSession, safeSecretEqual, sessionCookie, verifySession } from './
 import { assertSchema, getSetting, requireDb, setSetting, upsertContactFromMessage, writeAudit } from './db.js';
 import { createAutomation, deleteAutomation, listAutomations, updateAutomation } from './automation-crud.js';
 import { simulateAutomationSelection } from './automation-runner.js';
-import { getMetaStatus, listInstagramMedia, sendDirectMessage, syncInstagramAccount } from './meta.js';
+import { getMetaStatus, listInstagramMedia, sendDirectMessage, syncInstagramAccount, testInstagramCommentPolling } from './meta.js';
 
 const MAX_JSON_BODY = 128 * 1024;
 
@@ -229,6 +229,12 @@ export async function handleAdminApi(request, env, pathname) {
       return json({ ok: true, account });
     }
     if (pathname === '/api/media' && request.method === 'GET') return json({ ok: true, media: await listInstagramMedia(env) });
+    if (pathname === '/api/meta/poll-test' && request.method === 'GET') {
+      const url = new URL(request.url);
+      const mediaLimit = Math.max(1, Math.min(Number(url.searchParams.get('mediaLimit')) || 5, 10));
+      const commentLimit = Math.max(1, Math.min(Number(url.searchParams.get('commentLimit')) || 25, 50));
+      return json({ ok: true, ...(await testInstagramCommentPolling(env, mediaLimit, commentLimit)) });
+    }
     if (pathname === '/api/simulate' && request.method === 'POST') return json({ ok: true, result: await simulateAutomationSelection(env, await readJson(request)) });
     if (pathname === '/api/webhook-info' && request.method === 'GET') {
       const origin = new URL(request.url).origin;
